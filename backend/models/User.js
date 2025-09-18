@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     specialization: { type: String }, // Only for 12th pass
     age: { type: Number },
     gender: { type: String, enum: ['male', 'female', 'other'] },
-    academic_interests: [{ type: String }],
+    academic_interests: [{ type: mongoose.Schema.Types.Mixed }],
     email: { type: String, required: true, unique: true },
     createdAt: { type: Date, default: Date.now },
     isLoggedIn: { type: Boolean, default: false },
