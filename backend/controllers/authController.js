@@ -184,10 +184,12 @@ exports.login = async (req, res) => {
     }
 };
 
+// In your verifyOtp function
 exports.verifyOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
         if (!email || !otp) return res.status(400).json({ message: 'Email and OTP required' });
+        
         const otpDoc = await Otp.findOne({ email });
         if (!otpDoc || otpDoc.otp !== otp) {
             return res.status(400).json({ message: 'Invalid OTP' });
@@ -195,16 +197,23 @@ exports.verifyOtp = async (req, res) => {
         if (otpDoc.expiresAt < new Date()) {
             return res.status(400).json({ message: 'OTP expired' });
         }
-        // OTP valid, delete OTP
+
         await Otp.deleteOne({ email });
-        // Issue JWT and set isLoggedIn true
-                const user = await User.findOneAndUpdate({ email }, { isLoggedIn: true }, { new: true });
-                const token = jwt.sign(
-                    { id: user._id, email: user.email, qualification: user.qualification, specialization: user.specialization },
-                    process.env.JWT_SECRET,
-                    { expiresIn: '1d' }
-                );
-                res.json({ message: 'OTP verified', token });
+
+        const user = await User.findOneAndUpdate({ email }, { isLoggedIn: true }, { new: true }).select('-__v');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        // *** FIX: Include the user object in the response ***
+        res.json({ message: 'OTP verified', token, user });
+
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
