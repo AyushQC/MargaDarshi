@@ -13,6 +13,12 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const corsOptions = {
+  origin: 'http://localhost:3000', // Or your deployed frontend URL
+  optionsSuccessStatus: 200 
+};
+app.use(cors(corsOptions));
+
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
