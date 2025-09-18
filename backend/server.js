@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const collegeRoutes = require('./routes/colleges');
+const aiRoutes = require('./routes/ai'); // Import the new AI routes
 
 const app = express();
 
@@ -31,6 +32,7 @@ mongoose.connect(process.env.MONGO_URI, {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/colleges', collegeRoutes);
+app.use('/api', aiRoutes); // Use the AI routes with the /api prefix
 
 app.get('/', (req, res) => {
     res.send('API is running');
