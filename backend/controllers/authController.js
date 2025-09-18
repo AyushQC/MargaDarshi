@@ -1,9 +1,79 @@
-const axios = require('axios');
 const User = require('../models/User');
 const Otp = require('../models/Otp');
-const jwt = require('jsonwebtoken');
+const jwt =require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const { geminiCareerSuggestion } = require('../ai/gemini');
+const { geminiGenerateQuiz, getCareerTitles, getCareerDetails } = require('../ai/gemini');
+
+// --- NEW AI-DRIVEN ENDPOINTS ---
+
+// 1. Get Quiz
+exports.getQuiz = async (req, res) => {
+    try {
+        const userId = req.user ? req.user.id : null;
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const quiz = await geminiGenerateQuiz(user.qualification);
+        if (!quiz) {
+            return res.status(503).json({ message: 'Failed to generate quiz. AI service may be unavailable.' });
+        }
+        res.json({ quiz });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
+// 2. Submit Quiz and Get Career Titles
+exports.submitQuiz = async (req, res) => {
+    try {
+        const userId = req.user ? req.user.id : null;
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+        
+        const { answers } = req.body;
+        if (!answers || !Array.isArray(answers)) {
+            return res.status(400).json({ message: '"answers" field is required and must be an array.' });
+        }
+
+        // Save answers to user profile
+        const user = await User.findByIdAndUpdate(userId, { academic_interests: answers }, { new: true });
+
+        const careerTitles = await getCareerTitles(user.qualification, answers);
+        if (!careerTitles) {
+            return res.status(503).json({ message: 'Failed to get career suggestions. AI service may be unavailable.' });
+        }
+        res.json({ career_titles: careerTitles });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
+// 3. Get Detailed Career Roadmap
+exports.getCareerDetails = async (req, res) => {
+    try {
+        const userId = req.user ? req.user.id : null;
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const { career_title } = req.body;
+        if (!career_title) {
+            return res.status(400).json({ message: '"career_title" is required.' });
+        }
+
+        const details = await getCareerDetails(career_title, user.qualification);
+        if (!details) {
+            return res.status(503).json({ message: 'Failed to get career details. AI service may be unavailable.' });
+        }
+        res.json({ career_details: details });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
+
+// --- EXISTING USER AND AUTHENTICATION LOGIC ---
+
 // Admin delete user by email (simple static password auth)
 exports.adminDeleteUser = async (req, res) => {
     const { email, adminPassword } = req.body;
@@ -46,59 +116,6 @@ exports.updateProfile = async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
-};
-
-// Personalized recommendations endpoint
-exports.getRecommendations = async (req, res) => {
-    try {
-        const userId = req.user ? req.user.id : null;
-        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        // 1. Get AI recommendations (career, courses, study material)
-        const aiResult = await geminiCareerSuggestion(user.qualification, user.academic_interests || []);
-
-        // 2. Get nearby colleges (proxy to /api/colleges?state=...&district=...)
-        let colleges = [];
-        if (user.state && user.district) {
-            try {
-                const resp = await axios.get(`${process.env.BASE_URL || 'http://localhost:3000'}/api/colleges`, {
-                    params: { state: user.state, district: user.district },
-                    headers: { Authorization: req.headers.authorization }
-                });
-                colleges = resp.data.colleges || [];
-            } catch (e) {
-                colleges = [];
-            }
-        }
-
-        res.json({
-            recommendations: aiResult,
-            nearby_colleges: colleges
-        });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error', error: err.message });
-    }
-
-    const { email, adminPassword } = req.body;
-    if (!email || !adminPassword) {
-        return res.status(400).json({ message: 'Email and adminPassword required' });
-    }
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
-        return res.status(403).json({ message: 'Invalid admin password' });
-    }
-    try {
-        const user = await User.findOneAndDelete({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        await Otp.deleteOne({ email });
-        res.json({ message: 'User deleted successfully' });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error', error: err.message });
-    }
-
 };
 
 // Helper to generate 6-digit OTP
