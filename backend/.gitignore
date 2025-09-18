@@ -4,6 +4,7 @@ node_modules/
 # dotenv environment variables
 .env
 
+# Node.js
 .env.example
 
 # Logs
