@@ -179,7 +179,7 @@ The JSON output MUST adhere to the exact structure below. Do NOT include any mar
   "course_to_career_mapping": [
     "A list of 3-5 key subjects or skills learned during the degree that are directly applicable to this career."
   ],
-  "mermaid_code": "A functional Mermaid.js 'graph TD' flowchart string that visualizes the path from school to job. Start with 'Class ${qualification}' and end with 'Job as ${careerTitle}'. Include key milestones like 'Entrance Exam (e.g., JEE)', 'Undergraduate Degree', and 'Key Skills'."
+  "mermaid_code": "A functional Mermaid.js 'graph TD' flowchart string that visualizes the path from school to job. Start with 'Class ${qualification}' and end with 'Job as ${careerTitle}'. Include key milestones like 'Entrance Exam (e.g., JEE)', 'Undergraduate Degree', and 'Key Skills'. IMPORTANT: Enclose all node text in double quotes, like A[\\"Node Text\\"]."
 }
 `;
     try {
@@ -214,7 +214,7 @@ The JSON output MUST adhere to the exact structure below. Do NOT include any mar
   "course_to_career_mapping": [
     "A list of 3-5 key subjects or skills learned during the degree that are directly applicable to this career."
   ],
-  "mermaid_code": "A functional Mermaid.js 'graph TD' flowchart string that visualizes the path from school to job. Start with 'Class ${qualification}' and end with 'Job as ${careerTitle}'. Include key milestones like 'Entrance Exam (e.g., JEE)', 'Undergraduate Degree', and 'Key Skills'."
+  "mermaid_code": "A functional Mermaid.js 'graph TD' flowchart string that visualizes the path from school to job. Start with 'Class ${qualification}' and end with 'Job as ${careerTitle}'. Include key milestones like 'Entrance Exam (e.g., JEE)', 'Undergraduate Degree', and 'Key Skills'. IMPORTANT: Enclose all node text in double quotes, like A[\\"Node Text\\"]."
 }
 `;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
@@ -246,7 +246,7 @@ The JSON output MUST adhere to the exact structure below. Do NOT include any mar
   "course_to_career_mapping": [
     "A list of 3-5 key subjects or skills learned during the degree that are directly applicable to this career."
   ],
-  "mermaid_code": "A functional Mermaid.js 'graph TD' flowchart string that visualizes the path from school to job. Start with 'Class ${qualification}' and end with 'Job as ${careerTitle}'. Include key milestones like 'Entrance Exam (e.g., JEE)', 'Undergraduate Degree', and 'Key Skills'."
+  "mermaid_code": "A functional Mermaid.js 'graph TD' flowchart string that visualizes the path from school to job. Start with 'Class ${qualification}' and end with 'Job as ${careerTitle}'. Include key milestones like 'Entrance Exam (e.g., JEE)', 'Undergraduate Degree', and 'Key Skills'. IMPORTANT: Enclose all node text in double quotes, like A[\\"Node Text\\"]."
 }
 `;
     try {
