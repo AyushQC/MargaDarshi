@@ -16,7 +16,12 @@ app.use(bodyParser.json());
 
 const corsOptions = {
   origin: 'http://localhost:3000', // Or your deployed frontend URL
+  optionsSuccessStatus: 200 ,
+
+  origin: ' https://margadarshi-gfve.onrender.com', // Or your deployed frontend URL
   optionsSuccessStatus: 200 
+
+ 
 };
 app.use(cors(corsOptions));
 
