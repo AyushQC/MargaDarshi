@@ -205,3 +205,71 @@ http://localhost:5001/api/auth
 ---
 
 For any questions, contact the backend developer.
+
+---
+
+# Backend Documentation
+
+This document outlines the architecture, API endpoints, and key features of the MargaDarshi backend application.
+
+## 1. Core Architecture
+
+The backend is a monolithic Node.js application built with the Express framework and MongoDB for data storage. It serves three primary functions:
+1.  **User Management & Authentication**: Handles user registration, login, profile management, and authentication using JWT.
+2.  **AI-Powered Career Guidance**: Provides a multi-step, cost-effective career guidance flow using a combination of OpenAI, Gemini, and DeepSeek models.
+3.  **College Information Proxy**: Acts as a proxy to a separate, dedicated College API for fetching college information.
+
+## 2. Environment Variables (`.env`)
+
+The application relies on the following environment variables:
+
+-   `MONGO_URI`: MongoDB connection string.
+-   `JWT_SECRET`: Secret key for signing JWT tokens.
+-   `EMAIL_USER`: Gmail account for sending OTPs.
+-   `EMAIL_PASS`: Gmail app password for the email account.
+-   `ADMIN_PASSWORD`: Static password for admin-level operations.
+-   `OPENAI_API_KEY`: API key for OpenAI (Primary AI provider).
+-   `GEMINI_API_KEY`: API key for Google Gemini (Secondary AI provider).
+-   `DEEPSEEK_API_KEY`: API key for DeepSeek (Fallback AI provider).
+-   `COLLEGE_API_URL`: The base URL for the external College API (e.g., `https://collegeapi-mnni.onrender.com`).
+
+## 3. API Endpoints
+
+All endpoints are prefixed with `/api`.
+
+### User Authentication (`/api/auth`)
+
+-   **`POST /register`**: Registers a new user.
+-   **`POST /login`**: Initiates login by sending an OTP to the user's email.
+-   **`POST /verify-otp`**: Verifies the OTP and returns a JWT token and user object.
+-   **`POST /logout`**: Logs the user out. (Requires JWT)
+-   **`GET /dashboard`**: Retrieves the authenticated user's profile. (Requires JWT)
+-   **`PUT /profile`**: Updates the authenticated user's profile. (Requires JWT)
+    -   **Body**: A JSON object with any of the following fields: `name`, `dob`, `age`, `gender`, `qualification`, `specialization`, `state`, `district`, `profilePhotoUrl`.
+-   **`DELETE /admin/delete-user`**: Deletes a user by email. (Requires `adminPassword`)
+
+### AI Career Guidance (`/api`)
+
+This flow is designed to be efficient by splitting the AI interaction into multiple steps.
+
+1.  **`GET /quiz`**: Fetches a personalized, AI-generated quiz based on the user's qualification. (Requires JWT)
+2.  **`POST /quiz/submit`**: Submits the user's quiz answers. The backend saves these answers and returns a list of suggested career titles. This is a lightweight AI call. (Requires JWT)
+3.  **`POST /career/details`**: Takes a single `career_title` from the previous step and returns a detailed, structured roadmap for that specific career. This is the main, resource-intensive AI call. (Requires JWT)
+
+### College Information Proxy (`/api/colleges`)
+
+This backend acts as a proxy to the external College API defined by `COLLEGE_API_URL`. It does not contain any college data or business logic itself.
+
+-   **`GET /`**: Lists all colleges or filters them by forwarding query parameters.
+    -   **Query Params**: `district` (String), `program` (String)
+    -   **Example**: `/api/colleges?district=Kalaburagi&program=Engineering`
+-   **`GET /suggest`**: Gets personalized college suggestions by forwarding query parameters. (Requires JWT)
+    -   **Query Params**: `qualification` (String, required), `specialization` (String, optional)
+    -   **Example**: `/api/colleges/suggest?qualification=12th&specialization=medical`
+
+## 4. New Feature: Profile Photo
+
+-   **User Model (`models/User.js`)**: A new field `profilePhotoUrl` (String) has been added to the user schema to store the URL of the user's profile picture.
+-   **Update Profile Endpoint (`PUT /api/auth/profile`)**: This endpoint can now accept a `profilePhotoUrl` in the request body to save or update the user's profile photo URL.
+
+This implementation assumes you have a separate service or frontend client responsible for uploading the image and providing the URL to this backend.

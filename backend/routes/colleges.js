@@ -1,69 +1,55 @@
 const express = require('express');
+const router = express.Router();
 const axios = require('axios');
 const { authenticateJWT } = require('../middleware/authMiddleware');
-const router = express.Router();
 
-const BASE_URL = 'http://3.35.197.61:5000/colleges';
-const ALLOWED_DISTRICTS = ['Kalaburagi', 'Koppal'];
+const COLLEGE_API_URL = process.env.COLLEGE_API_URL;
 
-// Function to escape special characters for use in a regular expression.
-const escapeRegex = (string) => {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Middleware to handle errors from the external API
+const handleApiError = (err, res) => {
+    console.error('College API error:', err.response ? err.response.data : err.message);
+    const status = err.response ? err.response.status : 500;
+    const message = err.response ? err.response.data.message : 'Failed to fetch data from College API';
+    res.status(status).json({ message });
 };
 
-// GET /colleges?district=...&program=...
-router.get('/', authenticateJWT, async (req, res) => {
-  try {
-    const { district, program } = req.query;
-
-    if (district && !ALLOWED_DISTRICTS.includes(district)) {
-      return res.status(400).json({ message: 'Only Kalaburagi and Koppal are supported.' });
+/**
+ * @route   GET /api/colleges
+ * @desc    List all colleges or filter by district/program
+ * @access  Public
+ */
+router.get('/', async (req, res) => {
+    try {
+        const { district, program } = req.query;
+        const response = await axios.get(`${COLLEGE_API_URL}/api/colleges`, {
+            params: { district, program }
+        });
+        res.json(response.data);
+    } catch (err) {
+        handleApiError(err, res);
     }
-
-    // Always fetch all colleges for the given district first.
-    // If no district is provided, the external API will return all colleges.
-    const params = {};
-    if (district) {
-      params.district = district;
-    }
-
-    const response = await axios.get(BASE_URL, { params });
-    let colleges = response.data;
-
-    // If a program is specified, filter the results on our backend.
-    if (program && colleges && colleges.length > 0) {
-      // Escape the search term to handle special characters like '&' safely.
-      const escapedTerm = escapeRegex(program);
-      
-      // Create a case-insensitive regular expression.
-      const regex = new RegExp(escapedTerm, 'i');
-
-      // Filter colleges based on the program name.
-      // This now correctly checks the 'name' property inside the 'programs' array objects.
-      colleges = colleges.filter(college => 
-        Array.isArray(college.programs) && 
-        college.programs.some(p => p && p.name && regex.test(p.name))
-      );
-    }
-
-    res.json(colleges);
-
-  } catch (err) {
-    console.error('Error fetching or filtering colleges:', err.message);
-    res.status(500).json({ message: 'Failed to fetch colleges', error: err.message });
-  }
 });
 
-// GET /colleges/:collegeId (No changes needed here)
-router.get('/:collegeId', authenticateJWT, async (req, res) => {
-  try {
-    const { collegeId } = req.params;
-    const url = `${BASE_URL}/${collegeId}`;
-    const response = await axios.get(url);
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch college details', error: err.message });
-  }
+/**
+ * @route   GET /api/colleges/suggest
+ * @desc    Get personalized college suggestions
+ * @access  Authenticated
+ */
+router.get('/suggest', authenticateJWT, async (req, res) => {
+    try {
+        // The new API uses 'qualification' and 'specialization' directly
+        const { qualification, specialization } = req.query;
+        if (!qualification) {
+            return res.status(400).json({ message: 'Qualification is required' });
+        }
+
+        const response = await axios.get(`${COLLEGE_API_URL}/api/colleges/suggest`, {
+            params: { qualification, specialization }
+        });
+        res.json(response.data);
+    } catch (err) {
+        handleApiError(err, res);
+    }
 });
 
 module.exports = router;

@@ -100,7 +100,7 @@ exports.updateProfile = async (req, res) => {
     try {
         const userId = req.user ? req.user.id : null;
         if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-        const { age, gender, academic_interests, name, dob, qualification, specialization, state, district } = req.body;
+        const { age, gender, academic_interests, name, dob, qualification, specialization, state, district, profilePhotoUrl } = req.body;
         const update = {};
         if (age !== undefined) update.age = age;
         if (gender) update.gender = gender;
@@ -111,6 +111,7 @@ exports.updateProfile = async (req, res) => {
         if (specialization) update.specialization = specialization;
         if (state) update.state = state;
         if (district) update.district = district;
+        if (profilePhotoUrl) update.profilePhotoUrl = profilePhotoUrl; // Add this line
         const user = await User.findByIdAndUpdate(userId, update, { new: true });
         res.json({ message: 'Profile updated', user });
     } catch (err) {
