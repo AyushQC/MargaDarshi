@@ -11,18 +11,17 @@ const aiRoutes = require('./routes/ai'); // Import the new AI routes
 
 const app = express();
 
-app.use(cors());
-app.use(bodyParser.json());
-
 const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://margadarshi-gfve.onrender.com'
   ],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  credentials: true
 };
 
 app.use(cors(corsOptions));
+app.use(bodyParser.json());
 
 
 // MongoDB connection
