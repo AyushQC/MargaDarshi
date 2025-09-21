@@ -183,9 +183,7 @@ exports.login = async (req, res) => {
         if (!email) return res.status(400).json({ message: 'Email is required' });
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: 'User not found, please register' });
-        if (user.isLoggedIn) {
-            return res.status(403).json({ message: 'User already logged in. Please logout first.' });
-        }
+
         // Generate and send OTP
         const otp = generateOtp();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
