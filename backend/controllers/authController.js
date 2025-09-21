@@ -1,8 +1,101 @@
 const User = require('../models/User');
 const Otp = require('../models/Otp');
-const jwt =require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const multer = require('multer');
 const { geminiGenerateQuiz, getCareerTitles, getCareerDetails } = require('../ai/gemini');
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'), false);
+        }
+    }
+});
+
+// Upload profile photo
+exports.uploadPhoto = [
+    upload.single('profilePhoto'),
+    async (req, res) => {
+        try {
+            const userId = req.user ? req.user.id : null;
+            if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+            if (!req.file) {
+                return res.status(400).json({ message: 'No image file provided' });
+            }
+
+            // Convert buffer to base64
+            const base64Data = req.file.buffer.toString('base64');
+            
+            // Update user with image data
+            const user = await User.findByIdAndUpdate(
+                userId, 
+                {
+                    profilePhoto: {
+                        data: base64Data,
+                        contentType: req.file.mimetype,
+                        uploadedAt: new Date()
+                    }
+                }, 
+                { new: true }
+            );
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.json({ 
+                message: 'Profile photo uploaded successfully',
+                photoInfo: {
+                    contentType: req.file.mimetype,
+                    size: req.file.size,
+                    uploadedAt: user.profilePhoto.uploadedAt
+                }
+            });
+        } catch (err) {
+            if (err instanceof multer.MulterError) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({ message: 'File size too large. Maximum 5MB allowed.' });
+                }
+            }
+            res.status(500).json({ message: 'Server error', error: err.message });
+        }
+    }
+];
+
+// Get profile photo
+exports.getPhoto = async (req, res) => {
+    try {
+        const userId = req.user ? req.user.id : null;
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+        const user = await User.findById(userId);
+        if (!user || !user.profilePhoto.data) {
+            return res.status(404).json({ message: 'No profile photo found' });
+        }
+
+        // Convert base64 back to buffer
+        const imageBuffer = Buffer.from(user.profilePhoto.data, 'base64');
+        
+        res.set({
+            'Content-Type': user.profilePhoto.contentType,
+            'Content-Length': imageBuffer.length
+        });
+        
+        res.send(imageBuffer);
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
 
 // --- NEW AI-DRIVEN ENDPOINTS ---
 
@@ -100,7 +193,7 @@ exports.updateProfile = async (req, res) => {
     try {
         const userId = req.user ? req.user.id : null;
         if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-        const { age, gender, academic_interests, name, dob, qualification, specialization, state, district, profilePhotoUrl } = req.body;
+        const { age, gender, academic_interests, name, dob, qualification, specialization, state, district } = req.body;
         const update = {};
         if (age !== undefined) update.age = age;
         if (gender) update.gender = gender;
@@ -111,7 +204,7 @@ exports.updateProfile = async (req, res) => {
         if (specialization) update.specialization = specialization;
         if (state) update.state = state;
         if (district) update.district = district;
-        if (profilePhotoUrl) update.profilePhotoUrl = profilePhotoUrl; // Add this line
+        // Note: profilePhoto is now handled via separate upload endpoint
         const user = await User.findByIdAndUpdate(userId, update, { new: true });
         res.json({ message: 'Profile updated', user });
     } catch (err) {

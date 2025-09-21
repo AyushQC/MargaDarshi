@@ -10,7 +10,11 @@ const userSchema = new mongoose.Schema({
     age: { type: Number },
     gender: { type: String, enum: ['male', 'female', 'other'] },
     academic_interests: [{ type: mongoose.Schema.Types.Mixed }],
-    profilePhotoUrl: { type: String, default: '' }, // Field for profile photo URL
+    profilePhoto: { 
+        data: { type: String, default: '' }, // Base64 encoded image data
+        contentType: { type: String, default: '' }, // MIME type (image/jpeg, image/png, etc.)
+        uploadedAt: { type: Date, default: null }
+    },
     email: { type: String, required: true, unique: true },
     createdAt: { type: Date, default: Date.now },
     isLoggedIn: { type: Boolean, default: false },

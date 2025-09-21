@@ -35,6 +35,10 @@ router.get('/dashboard', authenticateJWT, authController.dashboard);
 // Update user profile
 router.put('/profile', authenticateJWT, authController.updateProfile);
 
+// Profile photo endpoints
+router.post('/upload-photo', authenticateJWT, authController.uploadPhoto);
+router.get('/photo', authenticateJWT, authController.getPhoto);
+
 // Admin: Delete a user
 router.delete('/admin/delete-user', authController.adminDeleteUser);
 

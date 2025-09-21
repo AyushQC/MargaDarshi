@@ -245,7 +245,13 @@ All endpoints are prefixed with `/api`.
 -   **`POST /logout`**: Logs the user out. (Requires JWT)
 -   **`GET /dashboard`**: Retrieves the authenticated user's profile. (Requires JWT)
 -   **`PUT /profile`**: Updates the authenticated user's profile. (Requires JWT)
-    -   **Body**: A JSON object with any of the following fields: `name`, `dob`, `age`, `gender`, `qualification`, `specialization`, `state`, `district`, `profilePhotoUrl`.
+    -   **Body**: A JSON object with any of the following fields: `name`, `dob`, `age`, `gender`, `qualification`, `specialization`, `state`, `district`.
+-   **`POST /upload-photo`**: Uploads a profile photo (JPG/PNG). (Requires JWT)
+    -   **Body**: Form-data with `profilePhoto` file field
+    -   **File Limits**: Max 5MB, images only
+    -   **Response**: Upload confirmation with file info
+-   **`GET /photo`**: Retrieves the authenticated user's profile photo. (Requires JWT)
+    -   **Response**: Returns the image file with appropriate Content-Type header
 -   **`DELETE /admin/delete-user`**: Deletes a user by email. (Requires `adminPassword`)
 
 ### AI Career Guidance (`/api`)
@@ -267,9 +273,40 @@ This backend acts as a proxy to the external College API defined by `COLLEGE_API
     -   **Query Params**: `qualification` (String, required), `specialization` (String, optional)
     -   **Example**: `/api/colleges/suggest?qualification=12th&specialization=medical`
 
-## 4. New Feature: Profile Photo
+## 4. Profile Photo Feature
 
--   **User Model (`models/User.js`)**: A new field `profilePhotoUrl` (String) has been added to the user schema to store the URL of the user's profile picture.
--   **Update Profile Endpoint (`PUT /api/auth/profile`)**: This endpoint can now accept a `profilePhotoUrl` in the request body to save or update the user's profile photo URL.
+The application now supports direct image file uploads for profile photos:
 
-This implementation assumes you have a separate service or frontend client responsible for uploading the image and providing the URL to this backend.
+### Database Storage
+-   **User Model (`models/User.js`)**: The `profilePhoto` field now stores an object with:
+    -   `data`: Base64 encoded image data
+    -   `contentType`: MIME type (image/jpeg, image/png, etc.)
+    -   `uploadedAt`: Timestamp of upload
+
+### API Endpoints
+-   **`POST /api/auth/upload-photo`**: Upload a profile photo file
+    -   **Method**: POST with multipart/form-data
+    -   **Field Name**: `profilePhoto`
+    -   **Supported Formats**: JPG, PNG, GIF, WebP
+    -   **Size Limit**: 5MB maximum
+    -   **Authentication**: JWT required
+
+-   **`GET /api/auth/photo`**: Retrieve user's profile photo
+    -   **Method**: GET
+    -   **Response**: Image file with proper Content-Type header
+    -   **Authentication**: JWT required
+
+### Usage Examples
+
+**Upload Photo (using curl):**
+```bash
+curl -X POST http://localhost:3000/api/auth/upload-photo \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     -F "profilePhoto=@/path/to/image.jpg"
+```
+
+**Get Photo (browser or img tag):**
+```html
+<img src="http://localhost:3000/api/auth/photo" 
+     headers="Authorization: Bearer YOUR_JWT_TOKEN" />
+```
